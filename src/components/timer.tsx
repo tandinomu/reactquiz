@@ -5,8 +5,11 @@ interface TimerProps {
 }
 export default function Timer({ timeLeft }: TimerProps) {
   let timerClass = "flex items-center justify-center space-x-2 text-2xl font-bold text-gray-700 mb-8";
+  if (timeLeft <= 10) {
+    timerClass += " warning";
+  }
   if (timeLeft <= 5) {
-    timerClass += " red warning danger";
+    timerClass += " red danger";
   }
   return (
     <div

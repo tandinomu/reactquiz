@@ -11,7 +11,11 @@ function App() {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
   const [score, setScore] = useState<number>(0);
-  const [timeLeft, setTimeLeft] = useState<number>(300);
+  const [timeLeft, setTimeLeft] = useState<number>(30);
+  const [startClicked, setStartClicked] = useState<boolean>(false);
+
+  // Disable start button when not in start state or after click
+  const isStartDisabled = gameState !== "start" || startClicked;
 
   useEffect(() => {
     let timer: NodeJS.Timeout | undefined;
@@ -19,22 +23,36 @@ function App() {
       timer = setInterval(() => {
         setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
       }, 1000);
-    } else if (timeLeft === 0 && gameState === "playing") {
-      setGameState("end");
     }
     return () => {
       if (timer) clearInterval(timer);
     };
   }, [gameState, timeLeft]);
 
-  // Prevent multiple rapid start clicks
+  useEffect(() => {
+    if (gameState === "playing" && timeLeft === 0) {
+      setGameState("end");
+    }
+  }, [gameState, timeLeft]);
+
+  // Reset everything when starting or restarting
   const handleStart = () => {
-    if (gameState !== "start" && gameState !== "end") return;
+    setStartClicked(true);
+    setTimeout(() => setStartClicked(false), 2000); // Prevent double click for 2s
     setGameState("playing");
     setTimeLeft(30);
     setScore(0);
     setCurrentQuestion(0);
     setSelectedAnswer(null);
+  };
+
+  const handleRestart = () => {
+    setGameState("start");
+    setTimeLeft(30);
+    setScore(0);
+    setCurrentQuestion(0);
+    setSelectedAnswer(null);
+    setStartClicked(false);
   };
 
   const handleAnswer = (index: number): void => {
@@ -46,7 +64,7 @@ function App() {
     }
 
     setTimeout(() => {
-      if (currentQuestion < QUESTIONS.length - 1) {
+      if (currentQuestion < QUESTIONS.length - 1 && timeLeft > 0) {
         setCurrentQuestion((prev) => prev + 1);
         setSelectedAnswer(null);
       } else {
@@ -58,7 +76,9 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
-        {gameState === "start" && <StartScreen onStart={handleStart} />}
+        {gameState === "start" && (
+          <StartScreen onStart={handleStart} disabled={isStartDisabled} />
+        )}
         {gameState === "playing" && (
           <div className="p-8">
             <Timer timeLeft={timeLeft} />
@@ -78,7 +98,7 @@ function App() {
           <GameOver
             score={score}
             totalQuestions={QUESTIONS.length}
-            onRestart={handleStart}
+            onRestart={handleRestart}
           />
         )}
       </div>
